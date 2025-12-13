@@ -1,365 +1,127 @@
-/* Reset and Base Styles */
+:root {
+    /* Medical/Clinical Color Palette - Soft Neutrals */
+    --color-primary: #00897b;
+    /* Medical Teal */
+    --color-primary-light: #4db6ac;
+    --color-primary-dark: #00695c;
+    --color-primary-lighter: #b2dfdb;
+    --color-primary-subtle: #e0f2f1;
+
+    --color-secondary: #0288d1;
+    /* Clinical Blue */
+    --color-secondary-light: #4fc3f7;
+    --color-secondary-dark: #0277bd;
+
+    /* Status Indicators - Medical Theme */
+    --color-success: #43a047;
+    /* Safe Green */
+    --color-success-light: #66bb6a;
+    --color-success-dark: #2e7d32;
+    --color-success-bg: #e8f5e9;
+
+    --color-warning: #fb8c00;
+    /* Caution Orange */
+    --color-warning-light: #ffb74d;
+    --color-warning-dark: #f57c00;
+    --color-warning-bg: #fff3e0;
+
+    --color-error: #e53935;
+    /* Alert Red */
+    --color-error-light: #ef5350;
+    --color-error-dark: #c62828;
+    --color-error-bg: #ffebee;
+
+    --color-info: #039be5;
+    /* Info Blue */
+    --color-info-bg: #e1f5fe;
+
+    /* Neutral Palette - Soft and Clinical */
+    --color-background: #fafafa;
+    --color-background-alt: #f5f5f5;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f9f9f9;
+    --color-border: #e0e0e0;
+    --color-border-light: #eeeeee;
+    --color-divider: #f0f0f0;
+
+    /* Text Colors */
+    --color-text-primary: #212121;
+    --color-text-secondary: #757575;
+    --color-text-tertiary: #9e9e9e;
+    --color-text-disabled: #bdbdbd;
+
+    /* Spacing System */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+
+    /* Typography */
+    --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 32px;
+    --font-size-4xl: 48px;
+
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Border Radius */
+    --border-radius-sm: 6px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 20px;
+    --border-radius-full: 9999px;
+
+    /* Shadows - Subtle Medical UI */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
 }
 
-:root {
-    --primary-color: #2196F3;
-    --secondary-color: #4CAF50;
-    --danger-color: #f44336;
-    --warning-color: #ff9800;
-    --background-color: #f5f5f5;
-    --surface-color: #ffffff;
-    --text-primary: #212121;
-    --text-secondary: #757575;
-    --border-color: #e0e0e0;
-    --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-primary);
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-base);
     line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-.app {
-    min-height: 100vh;
-}
-
-/* Page Layout */
-.page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-h1 {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-    color: var(--text-primary);
-}
-
-h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: var(--text-primary);
-}
-
-h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.75rem;
-    color: var(--text-primary);
-}
-
-/* Buttons */
-button {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--primary-color);
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #1976D2;
-}
-
-button:disabled {
-    background-color: var(--border-color);
-    cursor: not-allowed;
-}
-
-/* Inputs */
+/* Smooth Transitions for all interactive elements */
+button,
+a,
+input,
 select,
-input {
-    padding: 0.75rem;
-    font-size: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--surface-color);
+textarea {
+    transition: all var(--transition-base);
 }
 
-/* Program Select Page */
-.program-select-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 2rem;
-}
-
-.program-select-container {
-    width: 100%;
-    max-width: 1000px;
-}
-
-.platform-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: white;
-    text-align: center;
-    margin-bottom: 3rem;
-    letter-spacing: -0.5px;
-}
-
-.program-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
-    margin: 0 auto;
-}
-
-.program-card {
-    background-color: white;
-    border-radius: 12px;
-    padding: 2.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.program-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-}
-
-.program-card.enabled {
-    cursor: pointer;
-}
-
-.program-card.enabled:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-}
-
-.program-card.enabled:focus {
-    outline: 3px solid var(--primary-color);
+/* Focus styles for accessibility */
+*:focus-visible {
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
-}
-
-.program-card.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.program-card.disabled::before {
-    background: #bdbdbd;
-}
-
-.card-icon {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
-}
-
-.program-card.disabled .card-icon {
-    color: #9e9e9e;
-}
-
-.card-icon svg {
-    width: 100%;
-    height: 100%;
-}
-
-.program-card h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 1rem;
-}
-
-.program-card p {
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-    min-height: 3rem;
-}
-
-.card-status {
-    display: inline-block;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.enabled-badge {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-
-.disabled-badge {
-    background-color: #f5f5f5;
-    color: #757575;
-}
-
-/* Risk Assessment Page */
-.assessment-content {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.left-panel,
-.right-panel {
-    background-color: var(--surface-color);
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-}
-
-/* Human Model */
-.human-model {
-    text-align: center;
-}
-
-.model-container {
-    margin-top: 1rem;
-}
-
-.body-diagram {
-    width: 100%;
-    max-width: 300px;
-    height: auto;
-}
-
-/* Step Instructions */
-.step-instructions {
-    margin-bottom: 2rem;
-}
-
-.progress {
-    margin-top: 1rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* Status Indicator */
-.status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background-color: var(--surface-color);
-    border-radius: 4px;
-    box-shadow: var(--shadow);
-    margin-bottom: 1rem;
-}
-
-.status-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.5;
-    }
-}
-
-.status-text {
-    font-weight: 500;
-}
-
-/* Countdown Timer */
-.countdown-timer {
-    margin: 1.5rem 0;
-    text-align: center;
-}
-
-.timer-display {
-    margin-bottom: 1rem;
-}
-
-.timer-display .time {
-    font-size: 3rem;
-    font-weight: bold;
-    color: var(--primary-color);
-}
-
-.timer-controls {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-/* Controls */
-.controls {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.controls button {
-    flex: 1;
-}
-
-/* Report Page */
-.report-summary {
-    background-color: var(--surface-color);
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    margin-bottom: 2rem;
-    text-align: center;
-}
-
-.recommendations {
-    background-color: var(--surface-color);
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    margin-bottom: 2rem;
-}
-
-.recommendations ul {
-    list-style-position: inside;
-    margin-top: 1rem;
-}
-
-.recommendations li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.recommendations li:last-child {
-    border-bottom: none;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .assessment-content {
-        grid-template-columns: 1fr;
-    }
-
-    .controls {
-        flex-direction: column;
-    }
 }

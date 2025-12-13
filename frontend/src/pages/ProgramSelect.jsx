@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import './ProgramSelect.css';
 
 function ProgramSelect() {
     const navigate = useNavigate();

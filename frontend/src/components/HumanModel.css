@@ -1,0 +1,142 @@
+/* HumanModel Component Styles */
+.human-model {
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.model-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.body-diagram {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    transition: transform 0.3s ease;
+}
+
+.body-diagram:hover {
+    transform: scale(1.02);
+}
+
+/* Animation-ready classes for future joint angle updates */
+.segment-thigh,
+.segment-shank {
+    transition: stroke 0.3s ease, opacity 0.3s ease;
+}
+
+.segment-thigh:hover,
+.segment-shank:hover {
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.joint-knee {
+    transition: fill 0.3s ease, r 0.3s ease;
+}
+
+/* Pulse animation for highlighted joints */
+.knee-highlight {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.spine-highlight {
+    animation: glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.9;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        filter: drop-shadow(0 0 2px currentColor);
+    }
+
+    50% {
+        opacity: 0.8;
+        filter: drop-shadow(0 0 8px currentColor);
+    }
+}
+
+/* Future animation support - limb rotation */
+.left-thigh,
+.right-thigh,
+.left-shank,
+.right-shank,
+.left-upper-arm,
+.right-upper-arm,
+.left-forearm,
+.right-forearm {
+    transform-origin: center;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for state changes */
+.body-diagram * {
+    transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+    .model-container {
+        min-height: 250px;
+    }
+}
+
+/* State-specific styling enhancements */
+.body-diagram.active {
+    filter: drop-shadow(0 0 10px rgba(33, 150, 243, 0.5));
+}
+
+.body-diagram.error {
+    filter: drop-shadow(0 0 10px rgba(244, 67, 54, 0.5));
+}
+
+/* Animation keyframes for future joint movements */
+@keyframes flexKnee {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(-45deg);
+    }
+}
+
+@keyframes extendKnee {
+    from {
+        transform: rotate(-45deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+/* Class that can be applied for jump landing animation */
+.landing-phase .left-knee,
+.landing-phase .right-knee {
+    animation: flexKnee 0.3s ease-out forwards;
+}
+
+.stance-phase .left-knee,
+.stance-phase .right-knee {
+    animation: extendKnee 0.3s ease-in forwards;
+}
