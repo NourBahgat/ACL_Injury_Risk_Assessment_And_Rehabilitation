@@ -1,0 +1,103 @@
+// Updated Static and Flexion Calibration sections with START buttons
+
+// STATIC CALIBRATION - Replace lines ~241-271
+case STEPS.STATIC_CALIBRATION:
+    return (
+        <div className="step-content static-calibration">
+            <h2>Static Calibration</h2>
+            <p className="instruction-text">Stand still in an upright position</p>
+            <p className="help-text">Keep your body as still as possible for 10 seconds</p>
+
+            {!staticCalibrationStartTime ? (
+                // Show START button before calibration begins
+                <div className="calibration-controls">
+                    <button 
+                        className="btn-start-trial"
+                        onClick={handleStartStaticCalibration}
+                    >
+                        START Static Calibration
+                    </button>
+                    <p className="help-text">Click to begin 10-second calibration</p>
+                </div>
+            ) : (
+                // Show countdown and progress during calibration
+                <div className="calibration-timer">
+                    <div className="countdown-display">
+                        <span className="countdown-number">
+                            {Math.max(0, Math.ceil(STATIC_CALIBRATION_DURATION - (staticCalibrationProgress / 100 * STATIC_CALIBRATION_DURATION)))}
+                        </span>
+                        <span className="countdown-label">seconds remaining</span>
+                    </div>
+
+                    <div className="progress-bar">
+                        <div
+                            className="progress-fill"
+                            style={{
+                                width: `${staticCalibrationProgress}%`,
+                                transition: 'width 0.3s ease'
+                            }}
+                        ></div>
+                    </div>
+                </div>
+            )}
+
+            {staticCalibrationStartTime && (
+                <StatusIndicator status="processing" message="Collecting static posture data..." />
+            )}
+            
+            <div className="human-model-container">
+                <HumanModel highlightedJoint="spine" />
+            </div>
+        </div>
+    );
+
+// FLEXION CALIBRATION - Replace lines ~273-303
+case STEPS.FLEXION_CALIBRATION:
+    return (
+        <div className="step-content flexion-calibration">
+            <h2>Flexion Calibration</h2>
+            <p className="instruction-text">Perform slow squats</p>
+            <p className="help-text">Squat up and down slowly for 10 seconds</p>
+
+            {!flexionCalibrationStartTime ? (
+                // Show START button before calibration begins
+                <div className="calibration-controls">
+                    <button 
+                        className="btn-start-trial"
+                        onClick={handleStartFlexionCalibration}
+                    >
+                        START Flexion Calibration
+                    </button>
+                    <p className="help-text">Click to begin 10-second calibration</p>
+                </div>
+            ) : (
+                // Show countdown and progress during calibration
+                <div className="calibration-timer">
+                    <div className="countdown-display">
+                        <span className="countdown-number">
+                            {Math.max(0, Math.ceil(FLEXION_CALIBRATION_DURATION - (flexionCalibrationProgress / 100 * FLEXION_CALIBRATION_DURATION)))}
+                        </span>
+                        <span className="countdown-label">seconds remaining</span>
+                    </div>
+
+                    <div className="progress-bar">
+                        <div
+                            className="progress-fill"
+                            style={{
+                                width: `${flexionCalibrationProgress}%`,
+                                transition: 'width 0.3s ease'
+                            }}
+                        ></div>
+                    </div>
+                </div>
+            )}
+
+            {flexionCalibrationStartTime && (
+                <StatusIndicator status="processing" message="Collecting flexion data..." />
+            )}
+            
+            <div className="human-model-container">
+                <HumanModel highlightedJoint="knee" />
+            </div>
+        </div>
+    );

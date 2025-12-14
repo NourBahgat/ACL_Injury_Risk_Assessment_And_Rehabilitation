@@ -48,14 +48,8 @@ function RiskAssessment() {
             setStaticCalibrationProgress(0);
             return;
         }
-
-        // Send start_calibration command when entering static calibration step
-        if (!staticCalibrationStartTime) {
-            const { sendCommand } = require('../services/websocket');
-            sendCommand('start_calibration');
-            setStaticCalibrationStartTime(Date.now());
-        }
-    }, [currentStep, staticCalibrationStartTime, STEPS.STATIC_CALIBRATION]);
+        // Calibration now starts via handleStartStaticCalibration button click
+    }, [currentStep, STEPS.STATIC_CALIBRATION]);
 
     // Handle flexion calibration (squat for 10 seconds)
     useEffect(() => {
@@ -64,14 +58,8 @@ function RiskAssessment() {
             setFlexionCalibrationProgress(0);
             return;
         }
-
-        // Send start_flexion_calibration command when entering flexion calibration step
-        if (!flexionCalibrationStartTime) {
-            const { sendCommand } = require('../services/websocket');
-            sendCommand('start_flexion_calibration');
-            setFlexionCalibrationStartTime(Date.now());
-        }
-    }, [currentStep, flexionCalibrationStartTime, STEPS.FLEXION_CALIBRATION]);
+        // Calibration now starts via handleStartFlexionCalibration button click
+    }, [currentStep, STEPS.FLEXION_CALIBRATION]);
 
     // Initialize WebSocket connection
     useEffect(() => {
@@ -202,6 +190,20 @@ function RiskAssessment() {
         }
     };
 
+    const handleStartStaticCalibration = () => {
+        // Start static calibration
+        const { sendCommand } = require('../services/websocket');
+        sendCommand('start_calibration');
+        setStaticCalibrationStartTime(Date.now());
+    };
+
+    const handleStartFlexionCalibration = () => {
+        // Start flexion calibration  
+        const { sendCommand } = require('../services/websocket');
+        sendCommand('start_flexion_calibration');
+        setFlexionCalibrationStartTime(Date.now());
+    };
+
     const handleStartTrial = () => {
         // Lock UI and send start_task command
         setTaskStatus('running');
@@ -243,24 +245,40 @@ function RiskAssessment() {
                         <p className="instruction-text">Stand still in an upright position</p>
                         <p className="help-text">Keep your body as still as possible for 10 seconds</p>
 
-                        <div className="calibration-timer">
-                            <div className="countdown-display">
-                                <span className="countdown-label">Calibrating sensors...</span>
+                        {!staticCalibrationStartTime ? (
+                            <div className="calibration-controls">
+                                <button
+                                    className="btn-start-trial"
+                                    onClick={handleStartStaticCalibration}
+                                >
+                                    START Static Calibration
+                                </button>
+                                <p className="help-text">Click to begin 10-second calibration</p>
                             </div>
+                        ) : (
+                            <div className="calibration-timer">
+                                <div className="countdown-display">
+                                    <span className="countdown-number">
+                                        {Math.max(0, Math.ceil(STATIC_CALIBRATION_DURATION - (staticCalibrationProgress / 100 * STATIC_CALIBRATION_DURATION)))}
+                                    </span>
+                                    <span className="countdown-label">seconds remaining</span>
+                                </div>
 
-                            <div className="progress-bar">
-                                <div
-                                    className="progress-fill"
-                                    style={{
-                                        width: `${staticCalibrationProgress}%`,
-                                        transition: 'width 0.3s ease'
-                                    }}
-                                ></div>
+                                <div className="progress-bar">
+                                    <div
+                                        className="progress-fill"
+                                        style={{
+                                            width: `${staticCalibrationProgress}%`,
+                                            transition: 'width 0.3s ease'
+                                        }}
+                                    ></div>
+                                </div>
                             </div>
-                            <p className="progress-text">{Math.round(staticCalibrationProgress)}%</p>
-                        </div>
+                        )}
 
-                        <StatusIndicator status="processing" message="Collecting static posture data..." />
+                        {staticCalibrationStartTime && (
+                            <StatusIndicator status="processing" message="Collecting static posture data..." />
+                        )}
 
                         <div className="human-model-container">
                             <HumanModel highlightedJoint="spine" />
@@ -275,24 +293,40 @@ function RiskAssessment() {
                         <p className="instruction-text">Perform slow squats</p>
                         <p className="help-text">Squat up and down slowly for 10 seconds</p>
 
-                        <div className="calibration-timer">
-                            <div className="countdown-display">
-                                <span className="countdown-label">Recording flexion movement...</span>
-                            </div>
+                        {!flexionCalibrationStartTime ? (
+                            <div className="calibration-controls">
+                                <button
+                                    className="btn-start-trial"
+                                    onClick={handleStartFlexionCalibration}
+                                >
+                                    START Flexion Calibration
+                                </button>
+                                <p className="help-text">Click to begin 10-second calibration</p>
+                            </div  >
+                        ) : (
+                            <div className="calibration-timer">
+                                <div className="countdown-display">
+                                    <span className="countdown-number">
+                                        {Math.max(0, Math.ceil(FLEXION_CALIBRATION_DURATION - (flexionCalibrationProgress / 100 * FLEXION_CALIBRATION_DURATION)))}
+                                    </span>
+                                    <span className="countdown-label">seconds remaining</span>
+                                </div>
 
-                            <div className="progress-bar">
-                                <div
-                                    className="progress-fill"
-                                    style={{
-                                        width: `${flexionCalibrationProgress}%`,
-                                        transition: 'width 0.3s ease'
-                                    }}
-                                ></div>
+                                <div className="progress-bar">
+                                    <div
+                                        className="progress-fill"
+                                        style={{
+                                            width: `${flexionCalibrationProgress}%`,
+                                            transition: 'width 0.3s ease'
+                                        }}
+                                    ></div>
+                                </div>
                             </div>
-                            <p className="progress-text">{Math.round(flexionCalibrationProgress)}%</p>
-                        </div>
+                        )}
 
-                        <StatusIndicator status="processing" message="Collecting flexion data..." />
+                        {flexionCalibrationStartTime && (
+                            <StatusIndicator status="processing" message="Collecting flexion data..." />
+                        )}
 
                         <div className="human-model-container">
                             <HumanModel highlightedJoint="knee" />
