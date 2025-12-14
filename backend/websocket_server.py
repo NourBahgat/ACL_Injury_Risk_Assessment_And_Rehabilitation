@@ -487,7 +487,7 @@ class AssessmentServer:
                 "payload": {"message": "Failed to compute statistics"}
             }))
 
-    async def handle_client(self, websocket, path):
+    async def handle_client(self, websocket):
         """Handle frontend WebSocket connection"""
         self.frontend_client = websocket
         print(f"Frontend client connected from {websocket.remote_address}")
