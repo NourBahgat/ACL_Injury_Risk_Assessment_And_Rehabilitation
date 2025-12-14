@@ -400,92 +400,35 @@ function ACLAssessmentSystem() {
           <div style={{
             background: 'white',
             borderRadius: '16px',
-            padding: '2rem',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+            padding: '0',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+            overflow: 'hidden'
           }}>
-            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: '#1a202c' }}>
-              Sensor Placement
-            </h2>
-
-            <div style={{ position: 'relative', paddingTop: '150%' }}>
-              {/* Human Body */}
-              <svg
-                viewBox="0 0 100 100"
+            <div style={{ display: 'block', background: 'transparent', margin: '0', padding: '0' }}>
+              {/* Anatomical Model Image - changes based on current step */}
+              <img
+                src={
+                  currentStepData.id === 'calibration_flexion' ? '/src/assets/squatting.jpg' :
+                    currentStepData.id === 'jump_landing' ? '/src/assets/jump-landing.jpg' :
+                      currentStepData.id === 'abduction' ? '/src/assets/abduction.jpg' :
+                        currentStepData.id === 'jump' ? '/src/assets/vertical-jump.jpg' :
+                          currentStepData.id === 'walk' ? '/src/assets/walking.png' :
+                            '/src/assets/human-model.png'
+                }
+                alt={`Anatomical model demonstrating ${currentStepData.title}`}
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
                   width: '100%',
-                  height: '100%'
+                  height: '650px',
+                  objectFit: 'cover',
+                  display: 'block',
+                  margin: '0',
+                  padding: '0'
                 }}
-              >
-                {/* Head */}
-                <circle cx="50" cy="10" r="6" fill="#e2e8f0" stroke="#cbd5e0" strokeWidth="1" />
-
-                {/* Torso */}
-                <rect x="42" y="16" width="16" height="20" rx="2" fill="#e2e8f0" stroke="#cbd5e0" strokeWidth="1" />
-
-                {/* Arms */}
-                <line x1="42" y1="20" x2="30" y2="32" stroke="#cbd5e0" strokeWidth="3" strokeLinecap="round" />
-                <line x1="58" y1="20" x2="70" y2="32" stroke="#cbd5e0" strokeWidth="3" strokeLinecap="round" />
-
-                {/* Legs */}
-                <g>
-                  {/* Left leg */}
-                  <line x1="45" y1="36" x2="40" y2="52" stroke="#cbd5e0" strokeWidth="4" strokeLinecap="round" />
-                  <line x1="40" y1="52" x2="38" y2="70" stroke="#cbd5e0" strokeWidth="4" strokeLinecap="round" />
-                  <line x1="38" y1="70" x2="35" y2="82" stroke="#cbd5e0" strokeWidth="3" strokeLinecap="round" />
-
-                  {/* Right leg */}
-                  <line x1="55" y1="36" x2="60" y2="52" stroke="#cbd5e0" strokeWidth="4" strokeLinecap="round" />
-                  <line x1="60" y1="52" x2="62" y2="70" stroke="#cbd5e0" strokeWidth="4" strokeLinecap="round" />
-                  <line x1="62" y1="70" x2="65" y2="82" stroke="#cbd5e0" strokeWidth="3" strokeLinecap="round" />
-                </g>
-
-                {/* Sensors */}
-                {SENSOR_POSITIONS.map(sensor => {
-                  const isActive = sensorData[sensor.id]?.active;
-                  const signal = sensorData[sensor.id]?.signal || 0;
-
-                  return (
-                    <g key={sensor.id}>
-                      {/* Sensor pulse animation */}
-                      {isActive && (
-                        <circle
-                          cx={sensor.x}
-                          cy={sensor.y}
-                          r={3 + signal * 2}
-                          fill={sensor.side === 'left' ? '#667eea' : '#764ba2'}
-                          opacity={0.3}
-                        />
-                      )}
-                      {/* Sensor dot */}
-                      <circle
-                        cx={sensor.x}
-                        cy={sensor.y}
-                        r="2.5"
-                        fill={isActive ? (sensor.side === 'left' ? '#667eea' : '#764ba2') : '#cbd5e0'}
-                        stroke="white"
-                        strokeWidth="1"
-                      />
-                      {/* Label */}
-                      <text
-                        x={sensor.side === 'left' ? sensor.x - 8 : sensor.x + 8}
-                        y={sensor.y + 1}
-                        fontSize="3"
-                        fill="#4a5568"
-                        textAnchor={sensor.side === 'left' ? 'end' : 'start'}
-                      >
-                        {sensor.label}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+              />
             </div>
 
             {/* Sensor Legend */}
-            <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div style={{ margin: '0', padding: '1rem 1.5rem 1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               {SENSOR_POSITIONS.map(sensor => (
                 <div
                   key={sensor.id}
