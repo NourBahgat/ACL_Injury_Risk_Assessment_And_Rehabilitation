@@ -5,6 +5,8 @@ import StepInstructions from '../components/StepInstructions';
 import StatusIndicator from '../components/StatusIndicator';
 import CountdownTimer from '../components/CountdownTimer';
 import { connect, onMessage, disconnect, MESSAGE_TYPES } from '../services/websocket';
+import { calculateComprehensiveRisk, getDeviationDetails } from '../utils/riskCalculation';
+import { REFERENCE_VALUES } from '../config/referenceValues';
 import './RiskAssessment.css';
 
 function RiskAssessment() {
@@ -14,8 +16,8 @@ function RiskAssessment() {
     // Session state machine with defined steps
     const STEPS = {
         CONNECT: 'connect',
-        UPRIGHT_CHECK: 'upright_check',
-        CALIBRATION: 'calibration',
+        STATIC_CALIBRATION: 'static_calibration',
+        FLEXION_CALIBRATION: 'flexion_calibration',
         TASK_JUMP_LANDING: 'task_jump_landing',
         COMPLETE: 'complete'
     };
@@ -24,90 +26,52 @@ function RiskAssessment() {
     const [assessmentData, setAssessmentData] = useState(null);
     const [status, setStatus] = useState('ready');
 
-    // Upright posture detection state
-    const [isUpright, setIsUpright] = useState(false);
-    const [uprightStartTime, setUprightStartTime] = useState(null);
-    const [uprightDuration, setUprightDuration] = useState(0);
+    // Static Calibration state
+    const [staticCalibrationStartTime, setStaticCalibrationStartTime] = useState(null);
+    const [staticCalibrationProgress, setStaticCalibrationProgress] = useState(0);
+    const STATIC_CALIBRATION_DURATION = 10; // seconds
 
-    // Calibration state
-    const [calibrationStartTime, setCalibrationStartTime] = useState(null);
-    const [calibrationTimeRemaining, setCalibrationTimeRemaining] = useState(10);
-    const CALIBRATION_DURATION = 10; // seconds
+    // Flexion Calibration state
+    const [flexionCalibrationStartTime, setFlexionCalibrationStartTime] = useState(null);
+    const [flexionCalibrationProgress, setFlexionCalibrationProgress] = useState(0);
+    const FLEXION_CALIBRATION_DURATION = 10; // seconds
 
     // Jump landing task state
     const [taskStatus, setTaskStatus] = useState('idle'); // 'idle', 'running', 'processing', 'results'
     const [jumpAnimationPhase, setJumpAnimationPhase] = useState('stance'); // 'stance', 'jump', 'land'
     const [taskResultData, setTaskResultData] = useState(null);
 
-    // Handle upright posture continuous detection (3 seconds)
+    // Handle static calibration (stand still for 10 seconds)
     useEffect(() => {
-        if (currentStep !== STEPS.UPRIGHT_CHECK) {
-            // Reset upright state when not in upright check step
-            setIsUpright(false);
-            setUprightStartTime(null);
-            setUprightDuration(0);
+        if (currentStep !== STEPS.STATIC_CALIBRATION) {
+            setStaticCalibrationStartTime(null);
+            setStaticCalibrationProgress(0);
             return;
         }
 
-        if (!isUpright) {
-            // Reset timer if not upright
-            setUprightStartTime(null);
-            setUprightDuration(0);
-            return;
-        }
-
-        // Start timer when upright is first detected
-        if (isUpright && !uprightStartTime) {
-            setUprightStartTime(Date.now());
-        }
-
-        // Update duration every 100ms
-        const interval = setInterval(() => {
-            if (uprightStartTime) {
-                const duration = (Date.now() - uprightStartTime) / 1000;
-                setUprightDuration(duration);
-
-                // Auto-advance after 3 seconds of continuous upright posture
-                if (duration >= 3) {
-                    clearInterval(interval);
-                    setCurrentStep(STEPS.CALIBRATION);
-                }
-            }
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [currentStep, isUpright, uprightStartTime, STEPS.UPRIGHT_CHECK, STEPS.CALIBRATION]);
-
-    // Handle calibration countdown
-    useEffect(() => {
-        if (currentStep !== STEPS.CALIBRATION) {
-            // Reset calibration state when not in calibration step
-            setCalibrationStartTime(null);
-            setCalibrationTimeRemaining(CALIBRATION_DURATION);
-            return;
-        }
-
-        // Send start_calibration command when entering calibration step
-        if (!calibrationStartTime) {
+        // Send start_calibration command when entering static calibration step
+        if (!staticCalibrationStartTime) {
             const { sendCommand } = require('../services/websocket');
             sendCommand('start_calibration');
-            setCalibrationStartTime(Date.now());
+            setStaticCalibrationStartTime(Date.now());
+        }
+    }, [currentStep, staticCalibrationStartTime, STEPS.STATIC_CALIBRATION]);
+
+    // Handle flexion calibration (squat for 10 seconds)
+    useEffect(() => {
+        if (currentStep !== STEPS.FLEXION_CALIBRATION) {
+            setFlexionCalibrationStartTime(null);
+            setFlexionCalibrationProgress(0);
+            return;
         }
 
-        // Update countdown every 100ms
-        const interval = setInterval(() => {
-            if (calibrationStartTime) {
-                const elapsed = (Date.now() - calibrationStartTime) / 1000;
-                const remaining = Math.max(0, CALIBRATION_DURATION - elapsed);
-                setCalibrationTimeRemaining(remaining);
-
-                // Note: Step advancement is handled by calibration_done message
-                // not by timer completion
-            }
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [currentStep, calibrationStartTime, CALIBRATION_DURATION, STEPS.CALIBRATION]);
+        // Send start_flexion_calibration command when entering flexion calibration step
+        if (!flexionCalibrationStartTime) {
+            const { sendCommand } = require('../services/websocket');
+            sendCommand('start_flexion_calibration');
+            setFlexionCalibrationStartTime(Date.now());
+        }
+    }, [currentStep, flexionCalibrationStartTime, STEPS.FLEXION_CALIBRATION]);
 
     // Initialize WebSocket connection
     useEffect(() => {
@@ -119,23 +83,87 @@ function RiskAssessment() {
 
             // Handle different message types
             switch (data.type) {
-                case MESSAGE_TYPES.POSTURE_STATUS:
-                    // Update upright status from backend
-                    if (data.payload && typeof data.payload.upright === 'boolean') {
-                        setIsUpright(data.payload.upright);
+                case MESSAGE_TYPES.CALIBRATION_STATUS:
+                    // Update static calibration progress
+                    if (data.payload && currentStep === STEPS.STATIC_CALIBRATION) {
+                        const elapsed = data.payload.elapsed || 0;
+                        setStaticCalibrationProgress((elapsed / STATIC_CALIBRATION_DURATION) * 100);
+                    }
+                    // Auto-advance to flexion calibration when complete
+                    if (data.payload?.status === 'complete') {
+                        setCurrentStep(STEPS.FLEXION_CALIBRATION);
+                    }
+                    break;
+
+                case MESSAGE_TYPES.FLEXION_CALIBRATION_STATUS:
+                    // Update flexion calibration progress
+                    if (data.payload && currentStep === STEPS.FLEXION_CALIBRATION) {
+                        const elapsed = data.payload.elapsed || 0;
+                        setFlexionCalibrationProgress((elapsed / FLEXION_CALIBRATION_DURATION) * 100);
                     }
                     break;
 
                 case MESSAGE_TYPES.CALIBRATION_DONE:
-                    if (currentStep === STEPS.CALIBRATION) {
+                    // All calibration complete, move to jump landing task
+                    if (currentStep === STEPS.FLEXION_CALIBRATION) {
                         setCurrentStep(STEPS.TASK_JUMP_LANDING);
+                    }
+                    break;
+
+                case MESSAGE_TYPES.PROGRESS:
+                    // Generic progress updates during data collection
+                    if (data.payload) {
+                        const { elapsed, duration } = data.payload;
+                        if (currentStep === STEPS.STATIC_CALIBRATION) {
+                            setStaticCalibrationProgress((elapsed / duration) * 100);
+                        } else if (currentStep === STEPS.FLEXION_CALIBRATION) {
+                            setFlexionCalibrationProgress((elapsed / duration) * 100);
+                        }
+                    }
+                    break;
+
+                case MESSAGE_TYPES.TASK_PROGRESS:
+                    // Progress during jump landing task
+                    if (data.payload && taskStatus === 'running') {
+                        console.log(`Task progress: ${data.payload.elapsed.toFixed(1)}/${data.payload.duration}s`);
                     }
                     break;
 
                 case MESSAGE_TYPES.TASK_RESULT:
                     // Store result data and update task status to show results
                     if (data.payload) {
-                        setTaskResultData(data.payload);
+                        // Calculate risk assessment based on received data
+                        let processedData = data.payload;
+
+                        // If the payload contains statistics in the expected format, calculate risk
+                        if (data.payload.left_flexion && data.payload.right_flexion) {
+                            try {
+                                const riskAssessment = calculateComprehensiveRisk(data.payload);
+                                const deviations = getDeviationDetails(data.payload);
+
+                                processedData = {
+                                    ...data.payload,
+                                    riskAssessment,
+                                    deviations,
+                                    // Map to the old format for backward compatibility
+                                    leftKneeFlexion: data.payload.left_flexion.mean,
+                                    leftKneeValgus: data.payload.left_abduction.mean,
+                                    leftKneeRisk: riskAssessment.leftLeg.overallRisk,
+                                    rightKneeFlexion: data.payload.right_flexion.mean,
+                                    rightKneeValgus: data.payload.right_abduction.mean,
+                                    rightKneeRisk: riskAssessment.rightLeg.overallRisk,
+                                    overallRisk: riskAssessment.overallRisk,
+                                    riskLevel: riskAssessment.riskLevel
+                                };
+
+                                console.log('Risk Assessment Calculated:', riskAssessment);
+                                console.log('Deviations from Reference:', deviations);
+                            } catch (error) {
+                                console.error('Error calculating risk:', error);
+                            }
+                        }
+
+                        setTaskResultData(processedData);
                         setTaskStatus('results');
                     }
                     break;
@@ -155,12 +183,12 @@ function RiskAssessment() {
     const handleNextStep = () => {
         switch (currentStep) {
             case STEPS.CONNECT:
-                setCurrentStep(STEPS.UPRIGHT_CHECK);
+                setCurrentStep(STEPS.STATIC_CALIBRATION);
                 break;
-            case STEPS.UPRIGHT_CHECK:
-                setCurrentStep(STEPS.CALIBRATION);
+            case STEPS.STATIC_CALIBRATION:
+                setCurrentStep(STEPS.FLEXION_CALIBRATION);
                 break;
-            case STEPS.CALIBRATION:
+            case STEPS.FLEXION_CALIBRATION:
                 setCurrentStep(STEPS.TASK_JUMP_LANDING);
                 break;
             case STEPS.TASK_JUMP_LANDING:
@@ -208,30 +236,31 @@ function RiskAssessment() {
                     </div>
                 );
 
-            case STEPS.UPRIGHT_CHECK:
+            case STEPS.STATIC_CALIBRATION:
                 return (
-                    <div className="step-content upright-check">
-                        <h2>Upright Position Check</h2>
-                        <p>Please stand in an upright position.</p>
+                    <div className="step-content static-calibration">
+                        <h2>Static Calibration</h2>
+                        <p className="instruction-text">Stand still in an upright position</p>
+                        <p className="help-text">Keep your body as still as possible for 10 seconds</p>
 
-                        <div className="upright-status">
-                            <StatusIndicator
-                                status={isUpright ? 'success' : 'error'}
-                                message={isUpright ? 'Upright detected' : 'Not upright'}
-                            />
+                        <div className="calibration-timer">
+                            <div className="countdown-display">
+                                <span className="countdown-label">Calibrating sensors...</span>
+                            </div>
 
-                            {isUpright && uprightDuration > 0 && (
-                                <div className="upright-timer">
-                                    <p>Hold position: {Math.ceil(3 - uprightDuration)}s remaining</p>
-                                    <div className="progress-bar">
-                                        <div
-                                            className="progress-fill"
-                                            style={{ width: `${(uprightDuration / 3) * 100}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            )}
+                            <div className="progress-bar">
+                                <div
+                                    className="progress-fill"
+                                    style={{
+                                        width: `${staticCalibrationProgress}%`,
+                                        transition: 'width 0.3s ease'
+                                    }}
+                                ></div>
+                            </div>
+                            <p className="progress-text">{Math.round(staticCalibrationProgress)}%</p>
                         </div>
+
+                        <StatusIndicator status="processing" message="Collecting static posture data..." />
 
                         <div className="human-model-container">
                             <HumanModel highlightedJoint="spine" />
@@ -239,29 +268,35 @@ function RiskAssessment() {
                     </div>
                 );
 
-            case STEPS.CALIBRATION:
+            case STEPS.FLEXION_CALIBRATION:
                 return (
-                    <div className="step-content calibration">
-                        <h2>Calibration</h2>
-                        <p className="instruction-text">Remain still while sensors calibrate</p>
+                    <div className="step-content flexion-calibration">
+                        <h2>Flexion Calibration</h2>
+                        <p className="instruction-text">Perform slow squats</p>
+                        <p className="help-text">Squat up and down slowly for 10 seconds</p>
 
                         <div className="calibration-timer">
                             <div className="countdown-display">
-                                <span className="countdown-number">{Math.ceil(calibrationTimeRemaining)}</span>
-                                <span className="countdown-label">seconds remaining</span>
+                                <span className="countdown-label">Recording flexion movement...</span>
                             </div>
 
                             <div className="progress-bar">
                                 <div
                                     className="progress-fill"
                                     style={{
-                                        width: `${((CALIBRATION_DURATION - calibrationTimeRemaining) / CALIBRATION_DURATION) * 100}%`
+                                        width: `${flexionCalibrationProgress}%`,
+                                        transition: 'width 0.3s ease'
                                     }}
                                 ></div>
                             </div>
+                            <p className="progress-text">{Math.round(flexionCalibrationProgress)}%</p>
                         </div>
 
-                        <StatusIndicator status="processing" message="Calibrating sensors..." />
+                        <StatusIndicator status="processing" message="Collecting flexion data..." />
+
+                        <div className="human-model-container">
+                            <HumanModel highlightedJoint="knee" />
+                        </div>
                     </div>
                 );
 
@@ -311,13 +346,38 @@ function RiskAssessment() {
                             <div className="task-results">
                                 <h3>Assessment Results</h3>
 
+                                {/* Overall Risk Level Display */}
+                                {taskResultData.riskLevel && (
+                                    <div className="overall-risk-display" style={{
+                                        backgroundColor: taskResultData.riskLevel.color + '20',
+                                        borderLeft: `4px solid ${taskResultData.riskLevel.color}`,
+                                        padding: '1rem',
+                                        marginBottom: '1.5rem',
+                                        borderRadius: '4px'
+                                    }}>
+                                        <div className="risk-header">
+                                            <span className="risk-label">Overall Risk Level:</span>
+                                            <span className="risk-badge" style={{
+                                                backgroundColor: taskResultData.riskLevel.color,
+                                                color: 'white',
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '20px',
+                                                fontWeight: 'bold',
+                                                marginLeft: '1rem'
+                                            }}>
+                                                {taskResultData.riskLevel.label} ({taskResultData.overallRisk}%)
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="results-grid">
                                     {/* Left Knee Metrics */}
                                     <div className="knee-results left-knee-results">
                                         <h4>Left Knee</h4>
 
                                         <div className="metric">
-                                            <span className="metric-label">Peak Flexion</span>
+                                            <span className="metric-label">Mean Flexion</span>
                                             <span className="metric-value">
                                                 {taskResultData.leftKneeFlexion !== undefined
                                                     ? `${taskResultData.leftKneeFlexion.toFixed(1)}°`
@@ -326,7 +386,7 @@ function RiskAssessment() {
                                         </div>
 
                                         <div className="metric">
-                                            <span className="metric-label">Peak Valgus</span>
+                                            <span className="metric-label">Mean Abduction</span>
                                             <span className="metric-value">
                                                 {taskResultData.leftKneeValgus !== undefined
                                                     ? `${taskResultData.leftKneeValgus.toFixed(1)}°`
@@ -336,9 +396,11 @@ function RiskAssessment() {
 
                                         <div className="metric risk-metric">
                                             <span className="metric-label">Risk Level</span>
-                                            <span className="metric-value risk-value">
+                                            <span className="metric-value risk-value" style={{
+                                                color: taskResultData.riskAssessment?.leftLeg?.overallRisk > 50 ? '#f44336' : '#4caf50'
+                                            }}>
                                                 {taskResultData.leftKneeRisk !== undefined
-                                                    ? `${taskResultData.leftKneeRisk.toFixed(0)}%`
+                                                    ? `${taskResultData.leftKneeRisk}%`
                                                     : 'N/A'}
                                             </span>
                                         </div>
@@ -349,7 +411,7 @@ function RiskAssessment() {
                                         <h4>Right Knee</h4>
 
                                         <div className="metric">
-                                            <span className="metric-label">Peak Flexion</span>
+                                            <span className="metric-label">Mean Flexion</span>
                                             <span className="metric-value">
                                                 {taskResultData.rightKneeFlexion !== undefined
                                                     ? `${taskResultData.rightKneeFlexion.toFixed(1)}°`
@@ -358,7 +420,7 @@ function RiskAssessment() {
                                         </div>
 
                                         <div className="metric">
-                                            <span className="metric-label">Peak Valgus</span>
+                                            <span className="metric-label">Mean Abduction</span>
                                             <span className="metric-value">
                                                 {taskResultData.rightKneeValgus !== undefined
                                                     ? `${taskResultData.rightKneeValgus.toFixed(1)}°`
@@ -368,9 +430,11 @@ function RiskAssessment() {
 
                                         <div className="metric risk-metric">
                                             <span className="metric-label">Risk Level</span>
-                                            <span className="metric-value risk-value">
+                                            <span className="metric-value risk-value" style={{
+                                                color: taskResultData.riskAssessment?.rightLeg?.overallRisk > 50 ? '#f44336' : '#4caf50'
+                                            }}>
                                                 {taskResultData.rightKneeRisk !== undefined
-                                                    ? `${taskResultData.rightKneeRisk.toFixed(0)}%`
+                                                    ? `${taskResultData.rightKneeRisk}%`
                                                     : 'N/A'}
                                             </span>
                                         </div>
@@ -409,7 +473,7 @@ function RiskAssessment() {
             </div>
 
             <div className="assessment-content">
-                {currentStep !== STEPS.UPRIGHT_CHECK && (
+                {currentStep !== STEPS.STATIC_CALIBRATION && currentStep !== STEPS.FLEXION_CALIBRATION && (
                     <div className="left-panel">
                         <HumanModel highlightedJoint="knee" />
                     </div>

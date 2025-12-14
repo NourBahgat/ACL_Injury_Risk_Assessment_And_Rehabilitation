@@ -7,9 +7,15 @@
 export const MESSAGE_TYPES = {
     IMU_STREAM: 'imu_stream',
     POSTURE_STATUS: 'posture_status',
+    CALIBRATION_STATUS: 'calibration_status',
+    FLEXION_CALIBRATION_STATUS: 'flexion_calibration_status',
     CALIBRATION_DONE: 'calibration_done',
+    TASK_STATUS: 'task_status',
+    TASK_PROGRESS: 'task_progress',
     TASK_RESULT: 'task_result',
-    SESSION_REPORT: 'session_report'
+    SESSION_REPORT: 'session_report',
+    PROGRESS: 'progress',
+    ERROR: 'error'
 };
 
 let socket = null;
