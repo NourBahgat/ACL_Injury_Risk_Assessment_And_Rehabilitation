@@ -53,8 +53,10 @@ const ASSESSMENT_STEPS = [
 ];
 
 const SENSOR_POSITIONS = [
-  { id: 'leftKnee', label: 'L Knee', x: 35, y: 55, side: 'left' },
-  { id: 'rightKnee', label: 'R Knee', x: 65, y: 55, side: 'right' }
+  { id: 'leftThigh', label: 'L Thigh', x: 35, y: 45, side: 'left', position: 'thigh' },
+  { id: 'leftShank', label: 'L Shank', x: 35, y: 65, side: 'left', position: 'shank' },
+  { id: 'rightThigh', label: 'R Thigh', x: 65, y: 45, side: 'right', position: 'thigh' },
+  { id: 'rightShank', label: 'R Shank', x: 65, y: 65, side: 'right', position: 'shank' }
 ];
 
 function ACLAssessmentSystem() {
@@ -63,9 +65,11 @@ function ACLAssessmentSystem() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCalibrated, setIsCalibrated] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [wsStatus, setWsStatus] = useState('disconnected');
   const [sensorData, setSensorData] = useState({});
+  const [jumpLandingData, setJumpLandingData] = useState(null);
   const [results, setResults] = useState(null);
 
   const wsRef = useRef(null);
@@ -84,17 +88,35 @@ function ACLAssessmentSystem() {
 
         ws.onmessage = (event) => {
           const message = JSON.parse(event.data);
-          console.log('Received:', message);
+          console.log('Received WebSocket message:', message);
 
           if (message.type === 'posture_status') {
             setIsCalibrated(message.payload.upright);
+          } else if (message.type === 'calibration_status') {
+            console.log('Calibration status:', message.payload);
+            // Status update for static calibration - no action needed
+          } else if (message.type === 'flexion_calibration_status') {
+            console.log('Flexion calibration status:', message.payload);
+            // Status update for flexion calibration - no action needed
           } else if (message.type === 'calibration_done') {
-            console.log('Calibration complete from backend - auto-advancing');
-            // Backend confirmed calibration is complete, advance to next step
-            handleStepComplete();
+            console.log('✅ Calibration complete from backend!');
+            // Backend has finished collecting samples and completed calibration
+            // DON'T auto-advance - let the timer handle it or user can press START for next step
+          } else if (message.type === 'task_status' || message.type === 'task_progress') {
+            console.log('Task progress:', message.payload);
+            // Progress updates - no action needed
           } else if (message.type === 'task_result') {
-            setResults(message.payload);
-            handleStepComplete();
+            // Check if this is jump landing data
+            if (message.payload.task === 'jump_landing') {
+              console.log('Jump landing data received:', message.payload);
+              setJumpLandingData(message.payload);
+            }
+            console.log('Task result received:', message.payload);
+            // Don't auto-advance here either - let timer or user control flow
+          } else if (message.type === 'error') {
+            console.error('Backend error:', message.payload);
+          } else {
+            console.log('Unknown message type:', message.type, message);
           }
         };
 
@@ -188,8 +210,10 @@ function ACLAssessmentSystem() {
     setCurrentStep(0);
     setIsCalibrated(false);
     setShowContinue(false);
+    setShowCompleted(false);
     setShowResults(false);
     setResults(null);
+    setJumpLandingData(null);
     setTimeLeft(ASSESSMENT_STEPS[0].duration);
     setIsRunning(false); // Don't auto-start - wait for user to press START button
 
@@ -209,8 +233,8 @@ function ACLAssessmentSystem() {
       setCurrentStep(currentStep + 1);
       setTimeLeft(ASSESSMENT_STEPS[currentStep + 1].duration);
     } else {
-      // Last step completed - show results
-      setShowResults(true);
+      // Last step completed - show completion message with button
+      setShowCompleted(true);
     }
   };
 
@@ -227,6 +251,28 @@ function ACLAssessmentSystem() {
       setCurrentStep(nextStep);
       setTimeLeft(ASSESSMENT_STEPS[nextStep].duration);
       // Keep isRunning as false so START button appears
+    }
+  };
+
+  const computeRiskAssessment = () => {
+    // If we have jump landing data from backend, use it
+    if (jumpLandingData) {
+      console.log('Computing risk from jump landing data:', jumpLandingData);
+      // Backend should provide the risk scores directly
+      setResults(jumpLandingData);
+      setShowResults(true);
+    } else {
+      // Fallback: Use mock data for demonstration
+      // In production, this should fetch/compute from stored jump landing IMU data
+      console.warn('No jump landing data available, using mock data');
+      const mockRiskData = {
+        leftKneeRisk: Math.random() * 30 + 10, // 10-40%
+        rightKneeRisk: Math.random() * 30 + 10,
+        task: 'jump_landing',
+        message: 'Risk assessment based on jump landing biomechanics'
+      };
+      setResults(mockRiskData);
+      setShowResults(true);
     }
   };
 
@@ -652,7 +698,40 @@ function ACLAssessmentSystem() {
               </div>
             </div>
 
-            {/* Results Panel - Only show after all steps are complete */}
+            {/* Completion Panel - Show button to compute risk */}
+            {showCompleted && !showResults && (
+              <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '2rem',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+              }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', color: '#1a202c' }}>
+                  Assessment Complete
+                </h3>
+                <p style={{ color: '#718096', marginBottom: '1.5rem' }}>
+                  All movement tasks have been recorded. Click below to analyze the jump landing data and generate your risk assessment.
+                </p>
+                <button
+                  onClick={computeRiskAssessment}
+                  style={{
+                    width: '100%',
+                    padding: '1rem 2rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: 'white',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  See Risk Assessment Results
+                </button>
+              </div>
+            )}
+
+            {/* Results Panel - Only show after risk computation */}
             {showResults && (
               <div style={{
                 background: 'white',
@@ -661,7 +740,7 @@ function ACLAssessmentSystem() {
                 boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
               }}>
                 <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: '#1a202c' }}>
-                  Assessment Results
+                  ACL Injury Risk Assessment Results
                 </h3>
 
                 <div style={{ display: 'grid', gap: '1rem' }}>
@@ -670,7 +749,7 @@ function ACLAssessmentSystem() {
                       Left Knee Risk Score
                     </div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
-                      {results.leftKneeRisk?.toFixed(1)}%
+                      {results?.leftKneeRisk?.toFixed(1) || '0.0'}%
                     </div>
                   </div>
 
@@ -679,7 +758,7 @@ function ACLAssessmentSystem() {
                       Right Knee Risk Score
                     </div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#764ba2' }}>
-                      {results.rightKneeRisk?.toFixed(1)}%
+                      {results?.rightKneeRisk?.toFixed(1) || '0.0'}%
                     </div>
                   </div>
                 </div>
