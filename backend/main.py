@@ -52,14 +52,17 @@ async def websocket_endpoint(websocket: WebSocket):
             msg_type = message.get("type")
             
             if msg_type == "start_calibration":
-                # Simulate calibration delay
+                # Simulate calibration process
                 print("Starting calibration...")
+                
+                # Send posture status immediately
                 await manager.send_personal_message({
                     "type": "posture_status",
                     "payload": {"upright": True}
                 }, websocket)
                 
-                await asyncio.sleep(3) # Mock calibration time
+                # Simulate calibration time (3 seconds for sensor calibration)
+                await asyncio.sleep(3)
                 
                 print("Calibration done")
                 await manager.send_personal_message({
@@ -71,10 +74,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 task_name = message.get("payload", {}).get("task")
                 print(f"Starting task: {task_name}")
                 
-                # Simulate task running
-                await asyncio.sleep(1)
+                # Simulate task running for 10 seconds (collecting sensor data)
+                # Send periodic updates during the task
+                for i in range(10):
+                    await asyncio.sleep(1)
+                    print(f"Task {task_name} - second {i+1}/10")
                 
-                # Send mock results
+                # Generate mock results after task completes
                 results = {
                     "leftKneeFlexion": random.uniform(25, 35),
                     "leftKneeValgus": random.uniform(5, 15),
@@ -84,7 +90,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     "rightKneeRisk": random.uniform(10, 80)
                 }
                 
-                print("Sending results")
+                print(f"Task {task_name} complete - Sending results")
                 await manager.send_personal_message({
                     "type": "task_result",
                     "payload": results
@@ -92,3 +98,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
