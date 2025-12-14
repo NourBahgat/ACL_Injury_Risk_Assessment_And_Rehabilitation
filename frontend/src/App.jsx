@@ -3,20 +3,28 @@ import { Activity, Radio, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 const ASSESSMENT_STEPS = [
   {
-    id: 'calibration',
-    title: 'Calibration Phase',
+    id: 'calibration_static',
+    title: 'Static Calibration',
     description: 'Stand still for sensor calibration',
-    duration: 10, // 30 seconds for calibration
+    duration: 10,
     instruction: 'Stand upright with feet shoulder-width apart. Keep your body still.',
     taskType: 'calibration'
   },
   {
-    id: 'bend',
-    title: 'Knee Bend Test',
-    description: 'Perform controlled knee bends',
+    id: 'calibration_flexion',
+    title: 'Flexion Calibration',
+    description: 'Calibrate knee flexion range',
     duration: 10,
     instruction: 'Slowly bend your knees into a squat position, then return to standing. Repeat 3-5 times.',
     taskType: 'bend'
+  },
+  {
+    id: 'jump_landing',
+    title: 'Jump Landing Assessment',
+    description: 'Primary risk assessment task',
+    duration: 10,
+    instruction: 'Perform 3-5 jump landings. Jump straight up and land softly with bent knees. THIS IS THE MAIN ASSESSMENT TASK.',
+    taskType: 'jump_landing'
   },
   {
     id: 'abduction',
@@ -28,8 +36,8 @@ const ASSESSMENT_STEPS = [
   },
   {
     id: 'jump',
-    title: 'Jump Test',
-    description: 'Vertical jump assessment',
+    title: 'Vertical Jump Test',
+    description: 'Additional jump assessment',
     duration: 10,
     instruction: 'Perform 3-5 vertical jumps. Jump straight up and land softly with bent knees.',
     taskType: 'jump'
@@ -183,10 +191,9 @@ function ACLAssessmentSystem() {
     setShowResults(false);
     setResults(null);
     setTimeLeft(ASSESSMENT_STEPS[0].duration);
-    setIsRunning(true);
+    setIsRunning(false); // Don't auto-start - wait for user to press START button
 
-    // Start calibration
-    sendWebSocketMessage('start_calibration');
+    // Don't send message yet - wait for user to press START
   };
 
   const handleTimeExpired = () => {
@@ -195,12 +202,16 @@ function ACLAssessmentSystem() {
     // Timer expired - stop the countdown
     setIsRunning(false);
 
-    // Automatically advance to the next step after a brief delay
-    console.log(`Timer expired for ${step.taskType}. Auto-advancing to next step...`);
+    // Move to next step but DON'T start it - wait for user to press START button
+    console.log(`Timer expired for ${step.taskType}. Ready for next step.`);
 
-    setTimeout(() => {
-      handleStepComplete();
-    }, 1000); // 1 second delay before auto-advancing
+    if (currentStep < ASSESSMENT_STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+      setTimeLeft(ASSESSMENT_STEPS[currentStep + 1].duration);
+    } else {
+      // Last step completed - show results
+      setShowResults(true);
+    }
   };
 
   const handleStepComplete = () => {
@@ -211,21 +222,11 @@ function ACLAssessmentSystem() {
       setShowResults(true);
       setShowContinue(false);
     } else {
-      // Auto-advance to next step after a brief delay
-      setTimeout(() => {
-        const nextStep = currentStep + 1;
-        setCurrentStep(nextStep);
-        setTimeLeft(ASSESSMENT_STEPS[nextStep].duration);
-        setIsRunning(true);
-
-        // Send task command for the next step
-        const nextTask = ASSESSMENT_STEPS[nextStep].taskType;
-        if (nextTask === 'bend') {
-          sendWebSocketMessage('start_flexion_calibration');
-        } else {
-          sendWebSocketMessage('start_task', { task: nextTask });
-        }
-      }, 1000); // 1 second delay before auto-advancing
+      // Move to next step but DON'T auto-start - wait for user to press START
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setTimeLeft(ASSESSMENT_STEPS[nextStep].duration);
+      // Keep isRunning as false so START button appears
     }
   };
 
