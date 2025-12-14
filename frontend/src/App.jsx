@@ -195,9 +195,12 @@ function ACLAssessmentSystem() {
     // Timer expired - stop the countdown
     setIsRunning(false);
 
-    // Don't auto-advance - wait for backend confirmation
-    // Backend will send calibration_done or task_result to trigger advancement
-    console.log(`Timer expired for ${step.taskType}. Waiting for backend confirmation...`);
+    // Automatically advance to the next step after a brief delay
+    console.log(`Timer expired for ${step.taskType}. Auto-advancing to next step...`);
+
+    setTimeout(() => {
+      handleStepComplete();
+    }, 1000); // 1 second delay before auto-advancing
   };
 
   const handleStepComplete = () => {
