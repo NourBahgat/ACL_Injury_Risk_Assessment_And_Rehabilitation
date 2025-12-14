@@ -81,7 +81,9 @@ function ACLAssessmentSystem() {
           if (message.type === 'posture_status') {
             setIsCalibrated(message.payload.upright);
           } else if (message.type === 'calibration_done') {
-            console.log('Calibration data received');
+            console.log('Calibration complete from backend - auto-advancing');
+            // Backend confirmed calibration is complete, advance to next step
+            handleStepComplete();
           } else if (message.type === 'task_result') {
             setResults(message.payload);
             handleStepComplete();
@@ -190,17 +192,12 @@ function ACLAssessmentSystem() {
   const handleTimeExpired = () => {
     const step = ASSESSMENT_STEPS[currentStep];
 
-    if (step.taskType === 'calibration') {
-      setIsCalibrated(true);
-      // Don't send start_task for calibration, just complete the step
-      handleStepComplete();
-    } else if (currentStep < ASSESSMENT_STEPS.length - 1) {
-      // For all steps except the last one, send task message
-      sendWebSocketMessage('start_task', { task: step.taskType });
-    } else {
-      // For the last step, just complete it
-      handleStepComplete();
-    }
+    // Timer expired - stop the countdown
+    setIsRunning(false);
+
+    // Don't auto-advance - wait for backend confirmation
+    // Backend will send calibration_done or task_result to trigger advancement
+    console.log(`Timer expired for ${step.taskType}. Waiting for backend confirmation...`);
   };
 
   const handleStepComplete = () => {
@@ -209,10 +206,23 @@ function ACLAssessmentSystem() {
     // If this is the last step, show results
     if (currentStep >= ASSESSMENT_STEPS.length - 1) {
       setShowResults(true);
-      setShowContinue(false); // Don't show continue button on last step
+      setShowContinue(false);
     } else {
-      // For all other steps, show continue button
-      setShowContinue(true);
+      // Auto-advance to next step after a brief delay
+      setTimeout(() => {
+        const nextStep = currentStep + 1;
+        setCurrentStep(nextStep);
+        setTimeLeft(ASSESSMENT_STEPS[nextStep].duration);
+        setIsRunning(true);
+
+        // Send task command for the next step
+        const nextTask = ASSESSMENT_STEPS[nextStep].taskType;
+        if (nextTask === 'bend') {
+          sendWebSocketMessage('start_flexion_calibration');
+        } else {
+          sendWebSocketMessage('start_task', { task: nextTask });
+        }
+      }, 1000); // 1 second delay before auto-advancing
     }
   };
 
@@ -546,48 +556,26 @@ function ACLAssessmentSystem() {
                 </div>
               )}
 
-              {/* Continue Button */}
-              {showContinue && currentStep < ASSESSMENT_STEPS.length - 1 && (
-                <div style={{
-                  padding: '1rem',
-                  marginBottom: '1rem',
-                  background: '#d4edda',
-                  color: '#155724',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  justifyContent: 'space-between'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <CheckCircle size={20} />
-                    <span>Step complete! Click 'Continue' to proceed to the next test.</span>
-                  </div>
-                  <button
-                    onClick={continueAssessment}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontWeight: '500',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    Continue to Next Step
-                  </button>
-                </div>
-              )}
+              {/* Auto-advancing to next step... */}
 
               {/* Controls */}
               <div style={{ display: 'flex', gap: '1rem' }}>
-                {!isRunning && currentStep === 0 && !isCalibrated && (
+                {!isRunning && !showResults && (
                   <button
-                    onClick={startAssessment}
+                    onClick={() => {
+                      const step = ASSESSMENT_STEPS[currentStep];
+                      setTimeLeft(step.duration);
+                      setIsRunning(true);
+
+                      // Send appropriate message to backend based on step type
+                      if (step.taskType === 'calibration') {
+                        sendWebSocketMessage('start_calibration');
+                      } else if (step.taskType === 'bend') {
+                        sendWebSocketMessage('start_flexion_calibration');
+                      } else {
+                        sendWebSocketMessage('start_task', { task: step.taskType });
+                      }
+                    }}
                     disabled={wsStatus !== 'connected'}
                     style={{
                       flex: 1,
@@ -604,28 +592,10 @@ function ACLAssessmentSystem() {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    Start Assessment
+                    START {ASSESSMENT_STEPS[currentStep].title}
                   </button>
                 )}
 
-                {isRunning && (
-                  <button
-                    onClick={stopAssessment}
-                    style={{
-                      flex: 1,
-                      padding: '1rem 2rem',
-                      fontSize: '1rem',
-                      fontWeight: '600',
-                      color: 'white',
-                      background: '#dc3545',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Stop Assessment
-                  </button>
-                )}
 
                 {/* Restart Button (only shown after all steps are complete) */}
                 {showResults && (
