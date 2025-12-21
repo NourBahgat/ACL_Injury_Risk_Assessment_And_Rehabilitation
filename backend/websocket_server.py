@@ -531,7 +531,7 @@ async def main():
     print("Waiting for frontend connection...")
     print("=" * 60)
     
-    async with websockets.serve(server.handle_client, "localhost", 8000):
+    async with websockets.serve(server.handle_client, "localhost", 8001):
         await asyncio.Future()  # Run forever
 
 if __name__ == "__main__":

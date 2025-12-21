@@ -25,7 +25,7 @@ let connectionCallbacks = [];
 let disconnectionCallbacks = [];
 let errorCallbacks = [];
 
-const DEFAULT_WS_URL = 'ws://localhost:8000/ws';
+const DEFAULT_WS_URL = 'ws://localhost:8000/ws/{user_id}';
 const RECONNECT_DELAY = 5000;
 
 /**
@@ -33,21 +33,25 @@ const RECONNECT_DELAY = 5000;
  * @param {string} url - WebSocket server URL (optional)
  * @returns {WebSocket} The WebSocket instance
  */
-export function connect(url = DEFAULT_WS_URL) {
-    // If already connected, return existing socket
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        console.log('[WebSocket] Already connected');
-        return socket;
-    }
-
-    // Close existing socket if it's in a non-open state
+/**
+ * Connect to WebSocket server
+ * @param {string} userId - User ID for the WebSocket connection
+ * @param {string} baseUrl - Base WebSocket URL (optional, will use DEFAULT_WS_URL if not provided)
+ * @returns {WebSocket} The WebSocket instance
+ */
+export function connect(userId = 'anonymous', baseUrl = null) {
+    // If already connected, close the existing connection first
     if (socket) {
         socket.close();
         socket = null;
     }
 
-    console.log(`[WebSocket] Connecting to ${url}...`);
-    socket = new WebSocket(url);
+    // Build the WebSocket URL
+    let wsUrl = baseUrl || DEFAULT_WS_URL;
+    wsUrl = wsUrl.replace('{user_id}', userId || 'anonymous');
+
+    console.log(`[WebSocket] Connecting to ${wsUrl}...`);
+    socket = new WebSocket(wsUrl);
 
     socket.onopen = handleOpen;
     socket.onmessage = handleMessage;
@@ -310,10 +314,9 @@ function handleClose(event) {
  * @deprecated Use connect() and onMessage() instead
  */
 export function connectWebSocket(onMessageCallback, url) {
-    const ws = connect(url);
-    if (onMessageCallback) {
-        onMessage(onMessageCallback);
-    }
+    console.warn('connectWebSocket() is deprecated. Use connect(userId) and onMessage() instead');
+    const ws = connect('anonymous', url);
+    onMessage(onMessageCallback);
     return ws;
 }
 
