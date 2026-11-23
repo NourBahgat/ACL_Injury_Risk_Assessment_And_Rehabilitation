@@ -93,6 +93,6 @@ npm run dev
 |---|---|
 | Nour Bahgat | Project structure; IMU processing backend (sensor fusion, calibration, knee-angle computation, recording and statistics); guided assessment UI and risk calculation |
 | Malak Saad | FastAPI service, SQLite user/assessment history, dashboard UI |
-| Farida Hesham | Backend fixes |
+| Farida Abdelrahman | Backend fixes |
 
 AI coding assistants were used during development. The team designed the protocol and tested and integrated the system.
